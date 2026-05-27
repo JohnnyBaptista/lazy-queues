@@ -1,0 +1,16 @@
+# binário gerado
+/bin/
+*.exe
+
+# dependências (não precisa, Go usa go.sum)
+vendor/
+
+# variáveis de ambiente
+.env
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
