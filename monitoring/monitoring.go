@@ -18,7 +18,7 @@ func FetchMetricDescriptors() {
 	fmt.Println(response)
 }
 
-func FetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
+func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
 	metricPath := ResolveMetricPath(metric)
 	util.Log.Info(
 		"FetchTimeSeries",
@@ -48,8 +48,6 @@ func FetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, en
 
 	path := "projects/" + client.ProjectName + "/timeSeries?" + params.Encode()
 
-	util.Log.Info("FetchTimeSeries final path", "path", path)
-
 	response, err := client.FetchData[T](path)
 	if err != nil {
 		var zero T
@@ -64,20 +62,22 @@ func FetchGenericMetric(metric metricType, subscriptionID string, period int) {
 	end := time.Now()
 	start := end.AddDate(0, 0, -period)
 
-	response, err := FetchTimeSeries(
+	response, err := fetchTimeSeries(
 		metric,
 		start,
 		end,
 		subscriptionID,
 	)
 	if err != nil {
-		fmt.Println("Error fetching oldest unacked messages", err)
+		util.Log.Error("Error fetching oldest unacked messages", "err", err)
 	}
+
 	if len(response.TimeSeries) > 0 && len(response.TimeSeries[0].Points) > 0 {
 		ts := response.TimeSeries[0]
-		fmt.Printf("Metric: %+v\n", ts.Metric)
-		fmt.Printf("First point: %+v\n", *&ts.Points[0].Interval.EndTime)
-		fmt.Printf("First point value: %+v\n", *ts.Points[0].Value.Int64Value)
+		fmt.Println("")
+		fmt.Printf("Metric: %+v\n", ts.Metric.Type)
+		fmt.Printf("First point: %+v\n", ts.Points[0].Interval.EndTime)
+		fmt.Printf("First point value: %+v\n", ts.Points[0].Value.Int64Value)
 	}
 }
 

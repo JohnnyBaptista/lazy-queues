@@ -38,7 +38,7 @@ func prepareURL(bareURL string) string {
 func FetchData[T any](url string) (T, error) {
 	var zero T
 	finalEndpoint := prepareURL(url)
-	util.Log.Info("Final endpoint", "url", url)
+	util.Log.Info("Creating request to endpoint", "url", url)
 
 	req, err := http.NewRequest("GET", finalEndpoint, nil)
 	if err != nil {

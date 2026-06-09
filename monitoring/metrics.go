@@ -24,8 +24,8 @@ func ResolveMetricPath(metric metricType) string {
 // monitorado e uma métrica totalmente especificados.
 // Ref: https://docs.cloud.google.com/monitoring/api/ref_v3/rest/v3/TimeSeries
 type TimeSeries struct {
-	Metric *Metric  `json:"metric"`
-	Points []*Point `json:"points"`
+	Metric Metric  `json:"metric"`
+	Points []Point `json:"points"`
 }
 
 type Metric struct {
@@ -34,8 +34,8 @@ type Metric struct {
 }
 
 type Point struct {
-	Interval *TimeInterval `json:"interval"`
-	Value    *TypedValue   `json:"value"`
+	Interval TimeInterval `json:"interval"`
+	Value    TypedValue   `json:"value"`
 }
 
 type TimeInterval struct {
@@ -43,10 +43,10 @@ type TimeInterval struct {
 }
 
 type TypedValue struct {
-	DoubleValue *float64 `json:"doubleValue,omitempty"`
-	Int64Value  *int64   `json:"int64Value,omitempty,string"`
+	DoubleValue float64 `json:"doubleValue,omitempty"`
+	Int64Value  int64   `json:"int64Value,omitempty,string"`
 }
 
 type TimeSeriesReponse struct {
-	TimeSeries []*TimeSeries `json:"timeSeries"`
+	TimeSeries []TimeSeries `json:"timeSeries"`
 }
