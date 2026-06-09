@@ -4,6 +4,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"lazy-queues/util"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -37,9 +38,11 @@ func prepareURL(bareURL string) string {
 func FetchData[T any](url string) (T, error) {
 	var zero T
 	finalEndpoint := prepareURL(url)
+	util.Log.Info("Final endpoint", "url", url)
 
 	req, err := http.NewRequest("GET", finalEndpoint, nil)
 	if err != nil {
+		util.Log.Error("Error Creating request", "error", err)
 		return zero, err
 	}
 
@@ -47,12 +50,14 @@ func FetchData[T any](url string) (T, error) {
 
 	response, err := MainClient.client.Do(req)
 	if err != nil {
+		util.Log.Error("Error fetching request", "error", err)
 		return zero, err
 	}
 	defer response.Body.Close()
 
 	var result T
 	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		util.Log.Error("Error decoding response", "error", err)
 		return zero, err
 	}
 
