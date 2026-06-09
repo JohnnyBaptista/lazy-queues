@@ -18,7 +18,7 @@ func FetchMetricDescriptors() {
 	fmt.Println(response)
 }
 
-func FetchTimeSeries[T any](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
+func FetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
 	metricPath := ResolveMetricPath(metric)
 	util.Log.Info(
 		"FetchTimeSeries",
@@ -43,8 +43,8 @@ func FetchTimeSeries[T any](metric metricType, start time.Time, end time.Time, s
 			metricPath,
 			subscriptionID,
 		))
-	params.Set("interval.endTime", isoStart)
-	params.Set("interval.startTime", isoEnd)
+	params.Set("interval.startTime", isoStart)
+	params.Set("interval.endTime", isoEnd)
 
 	path := "projects/" + client.ProjectName + "/timeSeries?" + params.Encode()
 
@@ -59,16 +59,31 @@ func FetchTimeSeries[T any](metric metricType, start time.Time, end time.Time, s
 	return response, nil
 }
 
+// FetchGenericMetric - pode ser 1 dia, 3 dias,  7 dias, 20 dias
+func FetchGenericMetric(metric metricType, subscriptionID string, period int) {
+	end := time.Now()
+	start := end.AddDate(0, 0, -period)
+
+	response, err := FetchTimeSeries(
+		metric,
+		start,
+		end,
+		subscriptionID,
+	)
+	if err != nil {
+		fmt.Println("Error fetching oldest unacked messages", err)
+	}
+	if len(response.TimeSeries) > 0 && len(response.TimeSeries[0].Points) > 0 {
+		ts := response.TimeSeries[0]
+		fmt.Printf("Metric: %+v\n", ts.Metric)
+		fmt.Printf("First point: %+v\n", *&ts.Points[0].Interval.EndTime)
+		fmt.Printf("First point value: %+v\n", *ts.Points[0].Value.Int64Value)
+	}
+}
+
 func FetchOldestUnackedMessages() {
 	currentMetric := SubscriptionMetricOldestUnackedMessageAge
 	currentSubscription := "mercado-libre-answer-question-dlq-sub"
 
-	now := time.Now()
-	lastWeek := now.AddDate(0, 0, -7)
-
-	response, err := FetchTimeSeries[any](currentMetric, now, lastWeek, currentSubscription)
-	if err != nil {
-		fmt.Println("Error fetching oldest unacked messages", err)
-	}
-	fmt.Println(response)
+	FetchGenericMetric(currentMetric, currentSubscription, 1)
 }
