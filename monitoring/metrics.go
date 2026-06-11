@@ -14,6 +14,12 @@ const (
 	SubscriptionMetricOldestUnackedMessageAge metricType = "oldest_unacked_message_age" // Points.Value.Int64Value -> idade em segundos
 )
 
+var MetricsList = [...]metricType{
+	SubscriptionMetricOldestUnackedMessageAge,
+	SubscriptionMetricAckMessageCount,
+	SubscriptionMetricDLQMessageCount,
+}
+
 func ResolveMetricPath(metric metricType) string {
 	path := "subscription/" + string(metric)
 	return path

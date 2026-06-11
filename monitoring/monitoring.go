@@ -2,21 +2,15 @@ package monitoring
 
 import (
 	"fmt"
-	"lazy-queues/client"
-	"lazy-queues/util"
 	"net/url"
 	"time"
+
+	"lazy-queues/client"
+	"lazy-queues/state"
+	"lazy-queues/util"
 )
 
 const pubsubMetricBase = "pubsub.googleapis.com"
-
-func FetchMetricDescriptors() {
-	response, err := client.FetchData[any]("projects/" + client.ProjectName + "/metricDescriptors?filter=metric.type=starts_with(\"pubsub.googleapis.com\")")
-	if err != nil {
-		fmt.Println("Error fetching metricDescriptors", err)
-	}
-	fmt.Println(response)
-}
 
 func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
 	metricPath := ResolveMetricPath(metric)
@@ -46,7 +40,7 @@ func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, en
 	params.Set("interval.startTime", isoStart)
 	params.Set("interval.endTime", isoEnd)
 
-	path := "projects/" + client.ProjectName + "/timeSeries?" + params.Encode()
+	path := "projects/" + state.State.ProjectID + "/timeSeries?" + params.Encode()
 
 	response, err := client.FetchData[T](path)
 	if err != nil {
@@ -58,7 +52,7 @@ func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, en
 }
 
 // FetchGenericMetric - pode ser 1 dia, 3 dias,  7 dias, 20 dias
-func FetchGenericMetric(metric metricType, subscriptionID string, period int) {
+func FetchGenericMetric(metric metricType, subscriptionID string, period int) ([]TimeSeries, error) {
 	end := time.Now()
 	start := end.AddDate(0, 0, -period)
 
@@ -69,21 +63,24 @@ func FetchGenericMetric(metric metricType, subscriptionID string, period int) {
 		subscriptionID,
 	)
 	if err != nil {
+		var zero []TimeSeries
 		util.Log.Error("Error fetching oldest unacked messages", "err", err)
+		return zero, err
 	}
 
-	if len(response.TimeSeries) > 0 && len(response.TimeSeries[0].Points) > 0 {
-		ts := response.TimeSeries[0]
-		fmt.Println("")
-		fmt.Printf("Metric: %+v\n", ts.Metric.Type)
-		fmt.Printf("First point: %+v\n", ts.Points[0].Interval.EndTime)
-		fmt.Printf("First point value: %+v\n", ts.Points[0].Value.Int64Value)
-	}
+	return response.TimeSeries, nil
 }
 
-func FetchOldestUnackedMessages() {
-	currentMetric := SubscriptionMetricOldestUnackedMessageAge
-	currentSubscription := "mercado-libre-answer-question-dlq-sub"
+func FetchMetrics(metrics []metricType, subscriptionID string, period int) map[metricType][]TimeSeries {
+	timeSeriesByMetric := make(map[metricType][]TimeSeries)
 
-	FetchGenericMetric(currentMetric, currentSubscription, 1)
+	for _, met := range metrics {
+		response, err := FetchGenericMetric(met, subscriptionID, period)
+		if err != nil {
+			util.Log.Error("Error fetching oldest unacked messages", "err", err, "metric", string(met))
+		} else {
+			timeSeriesByMetric[met] = response
+		}
+	}
+	return timeSeriesByMetric
 }
