@@ -30,7 +30,19 @@ func (m viewsModel) Init() tea.Cmd {
 	return nil
 }
 
+const (
+	defaultChartWidth  = 30
+	defaultChartHeight = 12
+)
+
 func initialModel(timeSeries monitoring.TimeSeries) viewsModel {
+	zoneManager := zone.New()
+
+	chart := tslc.New(defaultChartWidth, defaultChartHeight)
+	chart.SetZoneManager(zoneManager)
+	mapChart(timeSeries.Points, &chart)
+	chart.DrawBrailleAll()
+
 	return viewsModel{
 		appState:   &state.State,
 		timeSeries: timeSeries,
@@ -41,8 +53,8 @@ func initialModel(timeSeries monitoring.TimeSeries) viewsModel {
 		},
 		Choice:      make(map[int]struct{}),
 		Quitting:    false,
-		chart:       tslc.Model{},
-		zoneManager: &zone.Manager{},
+		chart:       chart,
+		zoneManager: zoneManager,
 		cursor:      0,
 	}
 }
@@ -91,25 +103,19 @@ func (m viewsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func mapChart(points []monitoring.Point, chart *tslc.Model) {
 	for _, point := range points {
 		date := point.Interval.EndTime
-		chart.Push(tslc.TimePoint{date, point.Value.DoubleValue})
+		chart.Push(tslc.TimePoint{date, float64(point.Value.Int64Value)})
 	}
 }
 
 func graphicsView(m viewsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
-	width := 30
-	height := 12
-
-	chart := tslc.New(width, height)
-	timeSeries := m.timeSeries
-
-	mapChart(timeSeries.Points, &chart)
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		m.chart.Resize(msg.Width-2, msg.Height-2)
 	}
 
 	// forward Bubble Tea Msg to time series chart
@@ -120,9 +126,6 @@ func graphicsView(m viewsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m viewsModel) View() string {
-	m.zoneManager = zone.New()
-	m.chart.SetZoneManager(m.zoneManager)
-
 	return m.zoneManager.Scan(
 		lipgloss.NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
