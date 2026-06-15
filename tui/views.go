@@ -41,7 +41,7 @@ func initialModel(timeSeries monitoring.TimeSeries) viewsModel {
 	chart := tslc.New(defaultChartWidth, defaultChartHeight)
 	chart.SetZoneManager(zoneManager)
 	mapChart(timeSeries.Points, &chart)
-	chart.DrawBrailleAll()
+	chart.DrawAll()
 
 	return viewsModel{
 		appState:   &state.State,
@@ -60,43 +60,6 @@ func initialModel(timeSeries monitoring.TimeSeries) viewsModel {
 }
 
 func (m viewsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// switch msg := msg.(type) {
-	// case tea.KeyMsg:
-	//
-	// 	// Cool, what was the actual key pressed?
-	// 	switch msg.String() {
-	//
-	// 	// These keys should exit the program.
-	// 	case "ctrl+c", "q":
-	// 		return m, tea.Quit
-	//
-	// 	// The "up" and "k" keys move the cursor up
-	// 	case "up", "k":
-	// 		if m.cursor > 0 {
-	// 			m.cursor--
-	// 		}
-	//
-	// 	// The "down" and "j" keys move the cursor down
-	// 	case "down", "j":
-	// 		if m.cursor < len(m.choices)-1 {
-	// 			m.cursor++
-	// 		}
-	//
-	// 	// The "enter" key and the space bar toggle the selected state
-	// 	// for the item that the cursor is pointing at.
-	// 	case "enter", "space":
-	// 		_, ok := m.Choice[m.cursor]
-	// 		if ok {
-	// 			delete(m.Choice, m.cursor)
-	// 		} else {
-	// 			m.Choice[m.cursor] = struct{}{}
-	// 		}
-	// 	}
-	// }
-
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
-
 	return graphicsView(m, msg)
 }
 
@@ -118,10 +81,8 @@ func graphicsView(m viewsModel, msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chart.Resize(msg.Width-2, msg.Height-2)
 	}
 
-	// forward Bubble Tea Msg to time series chart
-	// and draw all data sets using braille runes
 	m.chart, _ = m.chart.Update(msg)
-	m.chart.DrawBrailleAll()
+	m.chart.DrawAll()
 	return m, nil
 }
 
@@ -134,6 +95,7 @@ func (m viewsModel) View() string {
 	)
 }
 
+// retornar o model
 func StartView(timeSeries monitoring.TimeSeries) {
 	p := tea.NewProgram(initialModel(timeSeries))
 	if _, err := p.Run(); err != nil {

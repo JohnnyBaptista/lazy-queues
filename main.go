@@ -25,29 +25,16 @@ func main() {
 
 	client.Execute()
 
-	tui.StartForm(&appState.SubscriptionID, &appState.ProjectID, theme)
+	tui.StartForm(&appState.ProjectID, theme)
 
 	if valid := appState.Validate(); !valid {
 		os.Exit(1)
 	}
 
-	// timeSeriesResponse := monitoring.FetchMetrics(
-	// 	monitoring.MetricsList[:],
-	// 	state.State.SubscriptionID,
-	// 	7,
-	// )
-	//
-	// firstTimeSeries := timeSeriesResponse[monitoring.SubscriptionMetricOldestUnackedMessageAge]
-	// tui.StartView(firstTimeSeries[0])
-	timeSeriesResponse, err := monitoring.FetchGenericMetric(
-		monitoring.SubscriptionMetricAckMessageCount,
-		appState.SubscriptionID,
-		7,
-	)
+	results, err := monitoring.GetSubscriptions()
 	if err != nil {
-		util.Log.Error("Erro buscando metrica")
-		os.Exit(1)
+		util.Log.Error("Ops", "err", err)
 	}
 
-	tui.StartView(timeSeriesResponse[0])
+	tui.ListSubscriptionsView(results[0:25])
 }

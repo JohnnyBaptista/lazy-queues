@@ -3,6 +3,7 @@ package monitoring
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"lazy-queues/client"
@@ -14,17 +15,6 @@ const pubsubMetricBase = "pubsub.googleapis.com"
 
 func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, end time.Time, subscriptionID string) (T, error) {
 	metricPath := ResolveMetricPath(metric)
-	util.Log.Info(
-		"FetchTimeSeries",
-		"metric", metricPath,
-		"subscriptionID",
-		subscriptionID,
-		"start",
-		start.String(),
-		"end",
-		end.String(),
-	)
-
 	isoStart := start.Format(time.RFC3339)
 	isoEnd := end.Format(time.RFC3339)
 
@@ -40,10 +30,21 @@ func fetchTimeSeries[T TimeSeriesReponse](metric metricType, start time.Time, en
 	params.Set("interval.startTime", isoStart)
 	params.Set("interval.endTime", isoEnd)
 
-	path := "projects/" + state.State.ProjectID + "/timeSeries?" + params.Encode()
+	path := client.GoogleMonitoringBaseURL + "projects/" + state.State.ProjectID + "/timeSeries?" + params.Encode()
 
 	response, err := client.FetchData[T](path)
 	if err != nil {
+		util.Log.Info(
+			"FetchTimeSeries",
+			"metric", metricPath,
+			"subscriptionID",
+			subscriptionID,
+			"start",
+			start.String(),
+			"end",
+			end.String(),
+		)
+
 		var zero T
 		return zero, err
 	}
@@ -83,4 +84,32 @@ func FetchMetrics(metrics []metricType, subscriptionID string, period int) map[m
 		}
 	}
 	return timeSeriesByMetric
+}
+
+type Subscriptions struct {
+	Name  string `json:"name"`
+	Topic string `json:"topic"`
+}
+
+type SubscriptionList struct {
+	Subscriptions []Subscriptions `json:"subscriptions"`
+}
+
+func GetSubscriptions() ([]string, error) {
+	projectID := state.State.ProjectID
+	path := client.GooglePubSubBaseURL + "projects/" + projectID + "/subscriptions"
+
+	response, err := client.FetchData[SubscriptionList](path)
+	if err != nil {
+		return nil, err
+	}
+
+	var subscriptionList []string
+	for _, subs := range response.Subscriptions {
+		splitted := strings.Split(subs.Name, "/")
+		subscriptionName := splitted[len(splitted)-1]
+		subscriptionList = append(subscriptionList, subscriptionName)
+	}
+
+	return subscriptionList, nil
 }

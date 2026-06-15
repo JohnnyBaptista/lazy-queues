@@ -5,23 +5,20 @@ import (
 )
 
 type AppState struct {
-	SubscriptionID string
-	ProjectID      string
+	ProjectID string
+}
+
+type Subscription struct {
+	chartState string
 }
 
 var State AppState = AppState{
-	SubscriptionID: "",
-	ProjectID:      "",
+	ProjectID: "",
 }
 
 func (s *AppState) Validate() bool {
 	if s.ProjectID == "" {
 		util.Log.Error("Missing projectID")
-		return false
-	}
-
-	if s.SubscriptionID == "" {
-		util.Log.Error("Missing SubscriptionID")
 		return false
 	}
 

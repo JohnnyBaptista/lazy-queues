@@ -7,15 +7,12 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
-func StartForm(subscriptionID *string, projectID *string, theme *huh.Theme) {
+func StartForm(projectID *string, theme *huh.Theme) {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
 				Title("Project ID").
 				Value(projectID),
-			huh.NewInput().
-				Title("Subscription ID").
-				Value(subscriptionID),
 		),
 	).WithTheme(theme)
 
